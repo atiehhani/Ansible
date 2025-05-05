@@ -1,0 +1,8 @@
+---
+- name: Sample Playbook to create a File
+  hosts: local
+  tasks:
+    - name: Create a file with a message
+      copy:
+        dest: /tmp/hello.txt
+        content: "Hello from Ansible!"
