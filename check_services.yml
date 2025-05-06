@@ -1,0 +1,27 @@
+---
+- name: بررسی وضعیت سرویس‌ها در سرورهای بانکی
+  hosts: banksrv
+  become: yes
+
+  tasks:
+    - name: بررسی سرویس Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+      register: nginx_status
+      ignore_errors: yes
+
+    - name: بررسی سرویس MySQL
+      ansible.builtin.service:
+        name: mysql
+        state: started
+      register: mysql_status
+      ignore_errors: yes
+
+    - name: نمایش وضعیت Nginx
+      debug:
+        var: nginx_status
+
+    - name: نمایش وضعیت MySQL
+      debug:
+        var: mysql_status
