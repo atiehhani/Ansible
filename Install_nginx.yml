@@ -1,0 +1,12 @@
+- name: Install Nginx Web Server
+  hosts: webservers
+  become: true  # اجرای دستورات با دسترسی sudo
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
