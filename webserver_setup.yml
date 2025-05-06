@@ -1,0 +1,55 @@
+- name: Configure Ubuntu Web Server
+  hosts: webservers
+  become: true
+
+  vars:
+    username: deployuser
+    html_content: "<h1>Welcome to your Ubuntu web server!</h1>"
+
+  tasks:
+    - name: Create a new user
+      user:
+        name: "{{ username }}"
+        shell: /bin/bash
+        groups: sudo
+        state: present
+        create_home: yes
+
+    - name: Update APT cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Ensure nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Allow OpenSSH through UFW
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Allow HTTP through UFW
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        enabled: yes
+
+    - name: Create a custom index.html
+      copy:
+        content: "{{ html_content }}"
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
