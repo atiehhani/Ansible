@@ -1,0 +1,14 @@
+all:
+  hosts:
+    server1:
+    server2:
+  children:
+    webservers:
+      hosts:
+        server1:
+    dbservers:
+      hosts:
+        server2:
+# We’ve defined two hosts: server1 and server2.
+# These hosts are then grouped into two categories: webservers and dbservers
+# server1 under webservers and server2 under dbservers.
