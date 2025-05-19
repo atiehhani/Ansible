@@ -1,0 +1,54 @@
+- name: update and check services
+  hosts: webservers
+  become: yes
+  vars:
+    report_file: "/tmp/update_status_report.log"
+    email_to: "admin@example.com"
+
+  tasks:
+
+    - name: create new log file
+      copy:
+        content: "📋 گزارش وضعیت سرور {{ inventory_hostname }} \n"
+        dest: "{{ report_file }}"
+        force: yes
+
+    - name: update packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == "Debian"
+      register: update_result
+
+    - name: register result of update 
+      lineinfile:
+        path: "{{ report_file }}"
+        line: "✅ نتیجه بروزرسانی: {{ update_result.stdout_lines | default('مشخص نیست') }}"
+
+    - name: check nginx status
+      service:
+        name: nginx
+        state: started
+      register: nginx_status
+      ignore_errors: true
+
+    - name: register status of nginx
+      lineinfile:
+        path: "{{ report_file }}"
+        line: "📌 وضعیت NGINX: {{ 'فعال' if nginx_status.state == 'started' else 'غیرفعال' }}"
+
+    - name: بررسی سرویس mysql
+      service:
+        name: mysql
+        state: started
+      register: mysql_status
+      ignore_errors: true
+
+    - name: ثبت وضعیت سرویس mysql
+      lineinfile:
+        path: "{{ report_file }}"
+        line: "📌 وضعیت MySQL: {{ 'فعال' if mysql_status.state == 'started' else 'غیرفعال' }}"
+
+    - name: ارسال گزارش از طریق ایمیل
+      shell: "mail -s '📊 گزارش بروزرسانی {{ inventory_hostname }}' {{ email_to }} < {{ report_file }}"
+      ignore_errors: true
