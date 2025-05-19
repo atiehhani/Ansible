@@ -1,0 +1,12 @@
+- name: copy module
+  hosts: webservers
+  become: yes  # اگر نیاز به دسترسی root هست
+
+  tasks:
+    - name: copy file
+      copy:
+        src: /home/atiehhani/ansible-project/
+        dest: /home/atiehhani/
+        owner: atiehhani
+        group: atiehhani
+        mode: '0644'
