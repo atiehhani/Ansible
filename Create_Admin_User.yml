@@ -1,0 +1,37 @@
+---
+- name: Create privileged admin user with passwordless sudo
+  hosts: all
+  gather_facts: no
+  become: yes
+  vars:
+    admin_user: criticalusauser
+    admin_password: "$6$9RDMSmAh4b.uw/ET$dZDj9Plyo9JMOR2SY9Wn05F1LmaeOpCU3gjttyPIjMrirO.kAL4JbiI5u17Arnqdu/2R96yVnJ7dG7JyY9ykU1"
+      # vars_files:
+      #- group_vars/all/vault.yml
+
+  tasks:
+    - name: Create admin user with encrypted password
+      user:
+        name: "{{ admin_user }}"
+        password: "{{ admin_password }}"
+          #   shell: /bin/bash
+          #create_home: yes
+          #home: "/home/{{ admin_user }}"
+        state: present
+
+    - name: Backup existing sudoers
+      copy:
+        src: "/etc/sudoers"
+        dest: "/etc/sudoers.bak"
+        remote_src: yes
+      ignore_errors: yes
+
+    - name: Add admin user to /etc/sudoers with passwordless sudo
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^{{ admin_user }}'
+        line: '{{ admin_user }} ALL=(ALL) NOPASSWD:ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+
+~  
