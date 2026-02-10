@@ -1,0 +1,73 @@
+- name: Configure Nexus YUM repository on Rocky Linux
+  hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+
+
+    - name: Check if file exists
+      stat:
+        path: /etc/yum.repos.d/nexus.repo
+      register: file_check
+
+    - name: get current date
+      shell: date +%Y%m%d_%H%M
+      register: date
+
+    - name: comment 31.45 if exist
+      shell: |
+        sed -i '/192\.168\.31\.45/ s/^[[:space:]]*[^#]/#&/' /etc/yum.conf
+        sed -i '/192\.168/ s/^[[:space:]]*[^#]/#&/' /etc/dnf/dnf.conf
+        sed -i '/192\.168\.31\.45/ s/^[[:space:]]*[^#]/#&/' ~/.bahrc
+        sed -i '/192\.168\.31\.45/ s/^[[:space:]]*[^#]/#&/' ~/.bah_profile
+        http_proxy=""
+        https_proxy=""
+
+
+    - name: Create backup directory
+      file:
+        path: "/etc/yum.repos.d/backup-{{ date.stdout }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      when: not file_check.stat.exists
+
+
+
+    - name: Move all repo files except nexus.repo into backup
+      shell: |
+        shopt -s extglob
+        mv /etc/yum.repos.d/!(nexus.repo|backup-*) /etc/yum.repos.d/backup-{{ date.stdout }}/
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+      when: not file_check.stat.exists
+
+    - name: Create Nexus repository file
+      copy:
+        dest: /etc/yum.repos.d/nexus.repo
+        content: |
+          [Nexus-Rocky9.5-YumGroup]
+          name=Nexus-Rocky9.5-YumGroup Linux $releasever - BaseOS
+          baseurl=http://192.168.248.40:8081/repository/Nexus-Rocky9.5-YumGroup/
+          enabled=1
+          countme=1
+        owner: root
+        group: root
+        mode: '0644'
+      when: not file_check.stat.exists
+
+    - name: Clean yum cache
+      command: yum clean all
+      when: not file_check.stat.exists
+
+    - name: Make yum cache
+      command: yum makecache
+      when: not file_check.stat.exists
+
+    - name: Print success mgs
+      debug:
+        msg: "? Successfully Done!"
+
+      when: not file_check.stat.exists
