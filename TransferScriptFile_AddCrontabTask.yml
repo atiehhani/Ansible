@@ -1,0 +1,30 @@
+---
+- name: Copy and schedule script 
+  hosts: all
+  become: yes
+  gather_facts: false
+
+  vars:
+    script_dropin_file: /var/lotus/scripts/cleanlogs.sh
+    local_config_file: /root/ansible/files/cleanlogs.sh
+
+  tasks:
+    - name: Copy script cleanlogs file from controller to server
+      ansible.builtin.copy:
+        src: "{{ local_config_file }}"
+        dest: "{{ script_dropin_file }}"
+        owner: root
+        group: root
+        mode: '0755'
+    - name: Add cron job to run script every hour
+      cron:
+        name: "Run cleanlogs every hour"
+        minute: "0"
+        hour: "*"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        user: root
+        job: "/bin/bash /var/lotus/scripts/cleanlogs.sh >> /var/log/cleanlogs.log 2>&1"
+
+
