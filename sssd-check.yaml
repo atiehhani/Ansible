@@ -1,0 +1,62 @@
+---
+- name: sssd check
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: check sssd
+      #shell: if [ "$(klist -k -t /etc/krb5.keytab |grep -iv $(hostname)|wc -l)" -gt 3 ] ; then klist -kt /etc/krb5.keytab ; fi
+      ##shell: ishell: if [ "$(klist -k -t /etc/krb5.keytab |grep -iv $(hostname)|wc -l)" -gt 3 ] ;then if [ "$(systemctl status sssd|grep -i fail|wc -l)" -gt 1 ];then klist -kt /etc/krb5.keytab ; fi;fi
+      ###shell: if [ "$(systemctl status sssd|grep -i fail|wc -l)" -gt 1 ];then systemctl status sssd|grep -i fail|tail -n1 ; fi
+      shell: timeout 5s sssctl domain-status lotus.ir|grep -i 'online status'|grep -i off
+      register: klist_out
+      failed_when: false
+      changed_when: false
+    - name: check hostname
+      shell: hostname && cat /etc/sssd/sssd.conf |grep 'ad_server'
+      register: hostname_out
+      failed_when: false
+      when:
+        - klist_out.stdout is defined
+        - klist_out.stdout | length > 0
+    - name: check klist-status
+      shell: if [ "$(klist -k -t /etc/krb5.keytab |grep -iv $(hostname)|wc -l)" -gt 3 ] ; then klist -kt /etc/krb5.keytab ; fi
+      register: sssd_out
+      when:
+        - klist_out.stdout is defined
+        - klist_out.stdout | length > 0
+    - name: check /etc/hosts
+      shell: cat /etc/hosts
+      register: hosts_out
+      when:
+        - klist_out.stdout is defined
+        - klist_out.stdout | length > 0
+    - name: Write collected output to report file
+      copy:
+        dest: "/tmp/sssd.txt"
+        content: |
+          === Hostname ===
+          {{ hostname_out.stdout }}
+
+          === Hostname ===
+          {{ hosts_out.stdout }}
+
+          === sssd status ===
+          {{ sssd_out.stdout }}
+
+          === klist -k -t /etc/krb5.keytab ===
+          {{ klist_out.stdout | default('No output') }}
+          {{ klist_out.stderr | default('') }}
+      when:
+        - klist_out.stdout is defined
+        - klist_out.stdout | length > 0
+      changed_when: false
+
+    - name: Fetch report to Ansible control node
+      fetch:
+        src: "/tmp/sssd.txt"
+          #dest: "/root/sssd/{{ ansible_host }}/"
+        dest:  /root/sssd/{{ ansible_host | default(inventory_hostname) }}.txt
+        flat: yes
+      when:
+        - klist_out.stdout is defined
+        - klist_out.stdout | length > 0
