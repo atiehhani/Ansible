@@ -1,0 +1,31 @@
+---
+- name: Create directories and copy files
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create financial certificate archive directory
+      ansible.builtin.file:
+        path: /var/lotus/financial_certificate/financial_certificate.archive
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+        recurse: yes
+
+    - name: Create guaranteefiles directory
+      ansible.builtin.file:
+        path: /var/lotus/guaranteefiles
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Copy all files from ./file to guaranteefiles directory
+      ansible.builtin.copy:
+        src: ./file/
+        dest: /var/lotus/guaranteefiles/
+        owner: root
+        group: root
+        mode: '0644'
+        directory_mode: '0755'
+          #backup: yes
