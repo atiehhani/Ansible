@@ -1,0 +1,52 @@
+---
+- name: Setup pwdxj script and configure sudoers
+  hosts: all
+  become: yes
+  vars:
+    view_username: "view"
+    view_password: "view"
+
+  tasks:
+    - name: Download pwdxj script to /var/lotus/scripts
+      get_url:
+        url: "http://192.168.243.25/usa/os-update/pwdxj"
+        dest: /var/lotus/scripts/pwdxj
+        owner: root
+        group: root
+        mode: '0755'
+        url_username: "{{ view_username }}"
+        url_password: "{{ view_password }}"
+        validate_certs: no
+      register: download_result
+
+    - name: Copy pwdxj to /usr/bin and make executable
+      copy:
+        src: /var/lotus/scripts/pwdxj
+        dest: /usr/bin/pwdxj
+        owner: root
+        group: root
+        mode: '0755'
+        remote_src: yes
+      when: download_result.changed
+
+    - name: Check if OPERATION alias exists in sudoers
+      shell: "grep 'Cmnd_Alias OPERATION' /etc/sudoers || true"
+      register: operation_check
+      changed_when: false
+
+    - name: Add OPERATION alias with pwdxj to sudoers
+      lineinfile:
+        path: /etc/sudoers
+        line: "Cmnd_Alias OPERATION  = /etc/init.d/*, /usr/bin/pwdxj"
+        regexp: "^Cmnd_Alias OPERATION"
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Test pwdxj command
+      command: /usr/bin/pwdxj
+      register: pwdxj_test
+      changed_when: false
+
+    - name: Show pwdxj test result
+      debug:
+        msg: "pwdxj test output: {{ pwdxj_test.stdout }}"
