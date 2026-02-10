@@ -1,0 +1,13 @@
+---
+- name: install package
+  hosts: sina-test1
+  gather_facts: no
+  tasks:
+    - name: dnf update
+      shell: dnf update
+      register: update
+      failed_when: false
+    - name: install sssd-tools
+      shell: dnf install sssd-tools.x86_64 -y
+      register: install
+~   
